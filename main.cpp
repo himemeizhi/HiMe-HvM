@@ -6,6 +6,8 @@
  * LABEL %s: set a label
  * JUMP %s: jump to a label
  * JIF [01] [<=>] %s: 0 for no, 1 for yes; jump to label if true
+ * CALL %s: call a process with label name
+ * RETURN return process
  */
 #include<cstdio>
 #include<iostream>
@@ -74,13 +76,15 @@ int main(int argn,char *argv[])
 		std::cout<<"File opening failed\n";
 		return EXIT_FAILURE;
 	}
-	static std::string buff;
+	static std::string buff,lb;
 	while(!fin.eof())
 	{
 		++line_count;
 		std::getline(fin,buff);
 		if(!buff[0])
 			break; // eof() doesnt work??
+		if(buff[0]=='#')
+			continue;// ignore comment
 		std::istringstream in(buff);
 		in>>buff;
 		if(buff=="GET")
@@ -109,7 +113,6 @@ int main(int argn,char *argv[])
 			if(label_map.count(buff))
 				WRONG_CODE();
 			label_map[buff]=out.size();
-			printf("%s %d\n",buff.c_str(),out.size());
 		}
 		else if(buff=="JUMP")
 		{
@@ -124,7 +127,6 @@ int main(int argn,char *argv[])
 		}
 		else if(buff=="JIF")
 		{
-			static std::string lb;
 			in>>i>>buff>>lb;
 			if(!label_map.count(lb))
 			{
@@ -145,12 +147,24 @@ int main(int argn,char *argv[])
 					out+="1+";
 				else if(buff[0]=='>')
 					out+="1-";
-				printf("%d %d\n",out.size(),label_map[lb]);
 				out+=trim(gen_number(label_map[lb]-(out.size()+MAX_NUMBER_LEN+1)))+"?";
 			}
 			else
 				WRONG_CODE();
 		}
+		else if(buff=="CALL")
+		{
+			in>>lb;
+			if(!label_map.count(lb))
+			{
+				later.push_back(psi(std::string("CALL ")+lb,out.size()));
+				out+=std::string(MAX_NUMBER_LEN+1,' ');// calculate number and a 'c'
+				continue;
+			}
+			out+=gen_number(label_map[lb])+"c";
+		}
+		else if(buff=="RETURN")
+			out+="$";
 		else
 			WRONG_CODE();
 	}
@@ -159,10 +173,10 @@ int main(int argn,char *argv[])
 	{
 		//		printf("%s : %d\n",it->first.c_str(),it->second);
 		std::istringstream in(it->first);
+		j=it->second;
 		in>>buff;
 		if(buff=="JIF")
 		{
-			static std::string lb;
 			in>>i>>buff>>lb;
 			if(i==0)
 			{
@@ -171,7 +185,6 @@ int main(int argn,char *argv[])
 			}
 			else if(i==1)
 			{
-				j=it->second;
 				if(buff[0]!='<' && buff[0]!='=' && buff[0]!='>')
 					WRONG_CODE(j);
 				if(buff[0]=='<')
@@ -189,11 +202,17 @@ int main(int argn,char *argv[])
 				*/
 			}
 		}
-		else//JUMP
+		else if(buff=="JUMP")
 		{
 			//not supported yet
 			WRONG_CODE(it->second);
 		}
+		else if(buff=="CALL")
+		{
+			in>>lb;
+			out.replace(j,MAX_NUMBER_LEN+1,gen_number(label_map[lb])+"c");
+		}
+		else WRONG_CODE(it->second);
 	}
 	puts(out.c_str());
 	return 0;
