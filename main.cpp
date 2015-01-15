@@ -66,6 +66,13 @@ std::string trim(std::string a)
 	return a+std::string(MAX_NUMBER_LEN-a.size(),' ');
 }
 
+inline void replace(std::string &mod,const int pos,const std::string &a)
+{
+	static int i;
+	for(i=0;i<a.size();++i)
+		mod[pos+i]=a[i];
+}
+
 int i,j,k,n,m;
 
 int main(int argn,char *argv[])
@@ -210,7 +217,8 @@ int main(int argn,char *argv[])
 		else if(buff=="CALL")
 		{
 			in>>lb;
-			out.replace(j,MAX_NUMBER_LEN+1,gen_number(label_map[lb])+"c");
+			replace(out,j,gen_number(label_map[lb])+"c");
+//			out.replace(j,MAX_NUMBER_LEN+1,gen_number(label_map[lb])+"c");
 		}
 		else WRONG_CODE(it->second);
 	}
