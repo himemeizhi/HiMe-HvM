@@ -17,6 +17,8 @@
 #include<map>
 #include<list>
 
+#define MAX_NUMBER_LEN (9)
+
 typedef std::pair<std::string,int>psi;
 
 int line_count;
@@ -24,13 +26,7 @@ std::string out;
 std::map<std::string,int>label_map;
 std::list<psi>later;
 
-inline void WRONG_CODE()
-{
-	std::cout<<"Error code in "<<line_count<<std::endl;
-	exit(1);
-}
-
-inline void WRONG_CODE(int line_count)
+inline void WRONG_CODE(int line_count=::line_count)
 {
 	std::cout<<"Error code in "<<line_count<<std::endl;
 	exit(1);
@@ -38,7 +34,7 @@ inline void WRONG_CODE(int line_count)
 
 std::string gen_number(int a)
 {
-	if(a>90)
+	if(a>810)
 	{
 		//not supported yet
 		WRONG_CODE();
@@ -53,11 +49,19 @@ std::string gen_number(int a)
 	}
 	if(a<19)
 		return "9"+gen_number(a-9)+"+";
-	static char b,c;
-	b='0'+a/9;
-	c='0'+a%9;
-	return std::string("9")+b+"*"+c+"+";
-	return re;
+	if(a<90)
+	{
+		char b,c;
+		b='0'+a/9;
+		c='0'+a%9;
+		return std::string("9")+b+"*"+c+"+";
+	}
+	return std::string("9")+gen_number(a/9)+"*"+std::string(1,'0'+a%9)+"+";
+}
+
+std::string trim(std::string a)
+{
+	return a+std::string(MAX_NUMBER_LEN-a.size(),' ');
 }
 
 int i,j,k,n,m;
@@ -76,7 +80,7 @@ int main(int argn,char *argv[])
 		++line_count;
 		std::getline(fin,buff);
 		if(!buff[0])
-			break;
+			break; // eof() doesnt work??
 		std::istringstream in(buff);
 		in>>buff;
 		if(buff=="GET")
@@ -105,16 +109,17 @@ int main(int argn,char *argv[])
 			if(label_map.count(buff))
 				WRONG_CODE();
 			label_map[buff]=out.size();
+			printf("%s %d\n",buff.c_str(),out.size());
 		}
 		else if(buff=="JUMP")
 		{
 			in>>buff;
 			if(label_map.count(buff))
-				out+=gen_number(label_map[buff])+"c";
+				out+=trim(gen_number(label_map[buff]-(out.size()+MAX_NUMBER_LEN+1)))+"g";
 			else
 			{
 				later.push_back(psi("JUMP "+buff,out.size()));
-				out+=std::string(6,' ');// 6 space, 5 for calculate number, 1 for 'c'
+				out+=std::string(MAX_NUMBER_LEN+1,' ');// calculate number and a 'g'
 			}
 		}
 		else if(buff=="JIF")
@@ -124,7 +129,7 @@ int main(int argn,char *argv[])
 			if(!label_map.count(lb))
 			{
 				later.push_back(psi(std::string("JIF ")+(i?"1":"0")+" "+buff+" "+lb,out.size()));
-				out+=std::string(10,' ');// 10 space, 2 for shift, 7 for calculate number, 1 for c
+				out+=std::string(2+MAX_NUMBER_LEN+1,' ');// 2 for shift, number, and 1 for g
 				continue;
 			}
 			if(i==0)
@@ -140,9 +145,8 @@ int main(int argn,char *argv[])
 					out+="1+";
 				else if(buff[0]=='>')
 					out+="1-";
-				buff=gen_number(label_map[lb]-(out.size()+8));
-				out+=buff+std::string(7-buff.size(),' ');
-				out+="?";
+				printf("%d %d\n",out.size(),label_map[lb]);
+				out+=trim(gen_number(label_map[lb]-(out.size()+MAX_NUMBER_LEN+1)))+"?";
 			}
 			else
 				WRONG_CODE();
@@ -153,7 +157,7 @@ int main(int argn,char *argv[])
 	puts(out.c_str());
 	for(std::list<psi>::const_iterator it(later.begin());it!=later.end();++it)
 	{
-//		printf("%s : %d\n",it->first.c_str(),it->second);
+		//		printf("%s : %d\n",it->first.c_str(),it->second);
 		std::istringstream in(it->first);
 		in>>buff;
 		if(buff=="JIF")
@@ -169,16 +173,20 @@ int main(int argn,char *argv[])
 			{
 				j=it->second;
 				if(buff[0]!='<' && buff[0]!='=' && buff[0]!='>')
-					WRONG_CODE();
+					WRONG_CODE(j);
 				if(buff[0]=='<')
 					out.replace(j,2,"1+");
 				else if(buff[0]=='>')
 					out.replace(j,2,"1-");
 				j+=2;
+//				printf("%d %d\n",j,label_map[lb]);
+				out.replace(j,MAX_NUMBER_LEN+1,trim(gen_number(label_map[lb]-(j+MAX_NUMBER_LEN+1)))+"?");
+				/*
 				buff=gen_number(label_map[lb]-(j+8));
 				for(k=0;k<buff.size();++k)
 					out[j+k]=buff[k];
 				out[j+7]='?';
+				*/
 			}
 		}
 		else//JUMP
