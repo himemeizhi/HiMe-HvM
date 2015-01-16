@@ -19,7 +19,7 @@
 #include<map>
 #include<list>
 
-#define MAX_NUMBER_LEN (9)
+#define MAX_NUMBER_LEN (9)  //a magic number. should be changed in particular situation
 
 typedef std::pair<std::string,int>psi;
 
@@ -174,11 +174,12 @@ int main(int argn,char *argv[])
 			out+="$";
 		else
 			WRONG_CODE();
+//		printf("%ld %s\n",out.size(),out.c_str());
 	}
 	puts(out.c_str());
 	for(std::list<psi>::const_iterator it(later.begin());it!=later.end();++it)
 	{
-		//		printf("%s : %d\n",it->first.c_str(),it->second);
+//		printf("%s : %d\n",it->first.c_str(),it->second);
 		std::istringstream in(it->first);
 		j=it->second;
 		in>>buff;
@@ -192,7 +193,7 @@ int main(int argn,char *argv[])
 			}
 			else if(i==1)
 			{
-				if(buff[0]!='<' && buff[0]!='=' && buff[0]!='>')
+				if((buff[0]!='<' && buff[0]!='=' && buff[0]!='>') || !label_map.count(lb))
 					WRONG_CODE(j);
 				if(buff[0]=='<')
 					out.replace(j,2,"1+");
@@ -211,8 +212,11 @@ int main(int argn,char *argv[])
 		}
 		else if(buff=="JUMP")
 		{
-			//not supported yet
-			WRONG_CODE(it->second);
+			in>>lb;
+			if(!label_map.count(lb))
+				WRONG_CODE(it->second);
+			buff=trim(gen_number(label_map[lb]-(j+MAX_NUMBER_LEN+1)))+"g";
+			out.replace(j,buff.size(),buff);
 		}
 		else if(buff=="CALL")
 		{
@@ -221,6 +225,7 @@ int main(int argn,char *argv[])
 //			out.replace(j,MAX_NUMBER_LEN+1,gen_number(label_map[lb])+"c");
 		}
 		else WRONG_CODE(it->second);
+//		puts(out.c_str());
 	}
 	puts(out.c_str());
 	return 0;
